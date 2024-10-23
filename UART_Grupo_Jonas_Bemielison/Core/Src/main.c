@@ -82,6 +82,9 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+char rx_buffer[10]; //buffer para receber dados caracteres
+char message[] = "testando..."; //mensagem a ser transmitida
+char Rx_flag = '0';
 
 /* USER CODE END 0 */
 
@@ -118,6 +121,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
+  HAL_UART_Receive_IT (&huart3, rx_buffer, sizeof(rx_buffer));
 
   /* USER CODE END 2 */
 
@@ -128,6 +132,19 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+   	    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+	  	HAL_UART_Transmit_IT(&huart3, (uint8_t*)message, strlen(message));
+	  	HAL_Delay(500);
+
+	  	if (Rx_flag == '1') {
+	  		Rx_flag = '0';
+	  		HAL_UART_Transmit_IT(&huart3, (uint8_t*)rx_buffer, sizeof(rx_buffer));
+	  	} else {
+	  		__NOP();
+	  	}
+
+
+
   }
   /* USER CODE END 3 */
 }
@@ -392,7 +409,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	Rx_flag = '1';
+	HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer));
+}
 /* USER CODE END 4 */
 
 /**
