@@ -22,6 +22,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+int contador = 0;
+
+char tabela[1000][5] = {
+		"Bemielison,16457",
+		"Jonas,12345",
+		"Fulano,54321",
+		"Sicrano,54879",
+		"Beltrano,89654"
+};
 
 /* USER CODE END Includes */
 
@@ -63,6 +72,8 @@ ETH_TxPacketConfig TxConfig;
 ETH_HandleTypeDef heth;
 
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_tx;
+DMA_HandleTypeDef hdma_usart3_rx;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -73,6 +84,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_ETH_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
@@ -83,7 +95,7 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 char rx_buffer[10]; //buffer para receber dados caracteres
-char message[] = "testando..."; //mensagem a ser transmitida
+char message[]; //mensagem a ser transmitida
 char Rx_flag = '0';
 
 /* USER CODE END 0 */
@@ -96,7 +108,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -117,6 +128,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ETH_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
@@ -132,7 +144,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-   	    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+   	    //HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
 	  	HAL_UART_Transmit_IT(&huart3, (uint8_t*)message, strlen(message));
 	  	HAL_Delay(500);
 
@@ -143,6 +155,20 @@ int main(void)
 	  		__NOP();
 	  	}
 
+	  	char aux[5];
+	  	int i = 0;
+	  	for (i=0; i < 5; i++){
+	  		aux[i] = rx_buffer[i];
+	  	}
+
+	  	if (aux == "Led_R") {	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14); 	}
+
+	  	if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Send_Count"){   	} //message[] = contador;
+	  	if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Clear_Count"){ contador = 0;  	}
+	  	if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Table"){   	}
+	  	//if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Led_R"){ HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);}
+	  	if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Led_Y"){ HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); }
+	  	if (HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer)) == "Led_G"){ HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0); }
 
 
   }
@@ -343,6 +369,25 @@ static void MX_USB_OTG_FS_PCD_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -373,7 +418,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
@@ -404,6 +449,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -412,6 +461,17 @@ static void MX_GPIO_Init(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	Rx_flag = '1';
 	HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer));
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+	if (GPIO_Pin == GPIO_PIN_13) {
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+		contador = (contador + 1);  //incrementa o valor do contador
+		message[] = contador;
+
+	} else {
+		__NOP();
+	}
 }
 /* USER CODE END 4 */
 
