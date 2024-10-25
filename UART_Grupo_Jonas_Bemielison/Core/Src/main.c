@@ -25,8 +25,9 @@
 int contador = 0;
 
 char rx_buffer[10]; // Buffer for received character
-char message[1] = "0";
+char message[10];
 char Rx_flag = '0';
+char aux[10];
 
 char tabela[1000][5] = {
 		"Bemielison,16457",
@@ -80,6 +81,8 @@ DMA_HandleTypeDef hdma_usart3_tx;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
+UART_HandleTypeDef huart2;  // Supondo que você esteja usando UART2
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -97,6 +100,14 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int Count(){
+
+
+	//HAL_UART_Transmit_DMA(&huart3, (uint8_t*)message, strlen(message));
+	//HAL_Delay(500);
+
+    //return;
+}
 
 
 /* USER CODE END 0 */
@@ -107,7 +118,6 @@ static void MX_USB_OTG_FS_PCD_Init(void);
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -142,6 +152,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -157,30 +168,37 @@ int main(void)
 	  	    	rx_buffer[0] = 0;	HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1);  } //led amarelo
 
 	  if (rx_buffer[0] == 'C' && rx_buffer[1] == 'l' && rx_buffer[2] == 'e' && rx_buffer[3] == 'a' && rx_buffer[4] == 'r' && rx_buffer[4] == '_' && rx_buffer[4] == 'C' && rx_buffer[4] == 'o' && rx_buffer[4] == 'u' && rx_buffer[4] == 'n' && rx_buffer[4] == 't') {
-	  	  	    	rx_buffer[0] = 0;	contador = 0;  } //zerar contador
+	  	  	    	rx_buffer[0] = 0;	contador = 0;
+	  	  	 	  } //zerar contador
+
 
 	  if (rx_buffer[0] == 'S' && rx_buffer[1] == 'e' && rx_buffer[2] == 'n' && rx_buffer[3] == 'd' && rx_buffer[4] == '_' && rx_buffer[5] == 'C' && rx_buffer[6] == 'o' && rx_buffer[7] == 'u' && rx_buffer[8] == 'n' && rx_buffer[9] == 't') {
-	  	  	    	rx_buffer[0] = 0;
+		      rx_buffer[0] = 0;
+              contador = 10;
 
-	  	  	   	   } //ler o contador
+          //    sprintf(message, "%s", contador);
+		     // char message[] = "contador";
+
+		     	  HAL_UART_Transmit_IT(&huart3, (uint8_t)message, strlen(message));
+		     	  HAL_Delay(500);
+		     	  if (Rx_flag == '1')  {Rx_flag = '0'; /*HAL_UART_Transmit_DMA(&huart3, (uint8_t*)rx_buffer, sizeof(rx_buffer));*/ } else {  __NOP(); 	  }
+	  } //ler o contador
+
+
+   }
+
+
+/*	  int i = 0;
+	  for (i=0; i<10;i++){
+
+
 
 	  }
-
-/*    conversão de inteiro para char.
-	  char aux[0] = "0";
-
-      sprintf(aux, "%s", contador);
-
-	  char message[0] = aux[0];
-
 */
-	  HAL_UART_Transmit_DMA(&huart3, (uint8_t*)message, strlen(message));
-	  HAL_Delay(500); // 1 Hz blink
-	  // Check if a character is received
 
-	  if (Rx_flag == '1')  {	  Rx_flag = '0'; HAL_UART_Transmit_DMA(&huart3, (uint8_t*)rx_buffer, sizeof(rx_buffer));
+	  //sprintf(message,"contador: %lu \n", 5 );
 
-	  } else {  __NOP(); 	  }
+
 
 
 }
@@ -474,11 +492,8 @@ static void MX_GPIO_Init(void)
 	void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 	if (GPIO_Pin == GPIO_PIN_13) {
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-		contador = (contador + 1);  //incrementa o valor do contador
-
-
-
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0); //led verde
+		contador = contador + 1;  //incrementa o valor do contador
 
 
 	}  else {
