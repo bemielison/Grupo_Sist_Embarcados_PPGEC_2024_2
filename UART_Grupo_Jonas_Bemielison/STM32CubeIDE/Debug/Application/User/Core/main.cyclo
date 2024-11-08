@@ -1,0 +1,10 @@
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:110:5:main	45
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:190:6:SystemClock_Config	4
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:251:13:MX_ETH_Init	2
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:300:13:MX_USART3_UART_Init	5
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:348:13:MX_USB_OTG_FS_PCD_Init	2
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:382:13:MX_DMA_Init	1
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:403:13:MX_GPIO_Init	1
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:470:7:HAL_GPIO_EXTI_Callback	2
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:479:7:HAL_UART_RxCpltCallback	1
+C:/Users/Bemielison/git/GrupoPPGEC_SistemasEmbarcados/UART_Grupo_Jonas_Bemielison/Core/Src/main.c:488:6:Error_Handler	1
