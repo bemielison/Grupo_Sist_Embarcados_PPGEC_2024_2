@@ -19,19 +19,23 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 #include "max7219.h"
+#include "string.h"
 
-
-
-const uint8_t data[3][8] =
+//dados a serem exibidos no displau de led´s
+const uint8_t data[6][8] =
 {
-{0x00, 0xff, 0xff, 0x18, 0x18, 0x18, 0x18, 0x18},    //t
-{0x83, 0xc3, 0xe7, 0x7e, 0x7c, 0x3c, 0x18, 0x18},    //v
-{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0xff, 0xff}};   //L
+{0x06, 0x06, 0xfe, 0xfe, 0x06, 0x36, 0x30, 0x30},    //T -
+{0x06, 0xfe, 0xfe, 0x06, 0x06, 0x10, 0x7c, 0x10},    //T +
+{0xfc, 0x80, 0x80, 0xfc, 0x00, 0x10, 0x10, 0x10},    //V -
+{0xfc, 0x80, 0x80, 0xfc, 0x00, 0x10, 0x38, 0x10},    //V +
+{0xfc, 0x80, 0x80, 0x80, 0x00, 0x10, 0x10, 0x10},    //L -
+{0xfc, 0x80, 0x80, 0x80, 0x00, 0x10, 0x38, 0x10}     //L +
+};
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,6 +45,8 @@ const uint8_t data[3][8] =
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+// PCF8591 I2C address (shifted for STM32 HAL)
+#define PCF8591_ADDRESS 0x48 << 1
 
 /* USER CODE END PD */
 
@@ -50,6 +56,8 @@ const uint8_t data[3][8] =
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
+I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
 
@@ -67,12 +75,24 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
+//Função de leitura no modulo sensor
+uint8_t PCF8591_ReadAnalog(uint8_t channel);
+
+	// Inicio do DAC - Jonas
+	#define PCF8591_ADDRESS 0x48 << 1  // Endereço do PCF8591, verifique se é o mesmo no seu módulo
+
+	uint8_t dac_value = 127; // Valor inicial para o DAC (entre 0 e 255)
+	char uart_buffer[20];
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+	int counter = 0;
+	char rx_buffer[9];
+	char execute_flag = '0';
 
 /* USER CODE END 0 */
 
@@ -108,6 +128,7 @@ int main(void)
   MX_SPI1_Init();
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
   max7219_Init(7);
@@ -124,14 +145,10 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 
+		 HAL_UART_Receive_IT(&huart3, rx_buffer, sizeof(rx_buffer));
 
-	  escrever_T ();
-	  escrever_V ();
-	  escrever_L ();
+		 ExecuteProgram();
 
-
-	 max7219_Clean();
-	 HAL_Delay( 2000 );
 
 
 
@@ -140,59 +157,129 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-void escrever_T (){
-
-	for (int i = 0; i<8; i++){
-		  max7219_PrintNtos(DIGIT_1 + i, data[0][i], 1); HAL_Delay( 100 );
-
+void ExecuteProgram()
+{
+	if(execute_flag == '1'){
+		Read_LDR();
+	}
+	else if(execute_flag == '2'){
+		Read_Temp();
+	}
+	else if(execute_flag == '3'){
+		Read_Pot();
+	}
+	else if(execute_flag == '4'){
+		Write_DAC();
 	}
 
-	 HAL_Delay( 2000 );
-	  }
-void escrever_V (){
-	//0x18, 0x3C, 0x66, 0x7E, 0x66, 0x66, 0x66, 0x00 A
-	//0x3C, 0x66, 0x60, 0x60, 0x60, 0x66, 0x3C, 0x00 C
-
-	for (int i = 0; i<8; i++){
-		  max7219_PrintNtos(DIGIT_1 + i, data[1][i], 1); HAL_Delay( 100 );
-
-	}
-	 HAL_Delay( 2000 );
-	  }
-void escrever_L (){
-	for (int i = 0; i<8; i++){
-		  max7219_PrintNtos(DIGIT_1 + i, data[2][i], 1); HAL_Delay( 100 );
-
-	}
-	 HAL_Delay( 2000 );
 }
-void escrever_positivo (){
 
-	          max7219_PrintNtos(DIGIT_1, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_2, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_3, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_4, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_5, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_6, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_7, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_8, 0x00, 1); HAL_Delay( 100 );
-			  HAL_Delay( 2000 );
-			  max7219_Clean();
-	  }
-void escrever_negativo (){
 
-	          max7219_PrintNtos(DIGIT_1, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_2, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_3, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_4, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_5, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_6, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_7, 0x00, 1); HAL_Delay( 100 );
-			  max7219_PrintNtos(DIGIT_8, 0x00, 1); HAL_Delay( 100 );
-			  HAL_Delay( 2000 );
-			  max7219_Clean();
-	  }
 
+void Read_Temp(){
+	 // Read analog data from A1 (channel 1) of the PCF8591
+		  uint8_t Temp = PCF8591_ReadAnalog(1);
+
+		  if(Temp < 128){   //exibir no display letra T -
+		 	    	  for (int i = 0; i < 8; i++){
+		 	    		  max7219_PrintDigit(DIGIT_1 + i,data[0][i], true );HAL_Delay( 1000 );max7219_Clean();
+		 	    	  }
+
+		 	      } else { //exibir no display letra T +
+		 	    	  for (int i = 0; i < 8; i++){
+		 	    	  	    		  max7219_PrintDigit(DIGIT_1 + i,data[1][i], true );HAL_Delay( 1000 );max7219_Clean();
+		 	    	  	    	  }
+		 	      }
+		  HAL_Delay(100); // Wait before next reading
+		  char counterMessage[9];
+
+		  snprintf(counterMessage, 8, "%s\r\n", " AIN1: ");
+		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+		  HAL_Delay(100);
+
+		  snprintf(counterMessage, 4, "%d\r\n", Temp);
+  		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+  		  HAL_Delay(100);
+  		  execute_flag = '0';
+
+}
+
+void Read_Pot(){
+	 uint8_t Pot = PCF8591_ReadAnalog(3);
+
+	      if(Pot < 128){   //exibir no display letra V -
+	    	  for (int i = 0; i < 8; i++){
+	    		  max7219_PrintDigit(DIGIT_1 + i,data[2][i], true );HAL_Delay( 1000 );max7219_Clean();
+	    	  }
+
+	      } else { //exibir no display letra V +
+	    	  for (int i = 0; i < 8; i++){
+	    	  	    		  max7219_PrintDigit(DIGIT_1 + i,data[3][i], true );HAL_Delay( 1000 );max7219_Clean();
+	    	  	    	  }
+	      }
+	      // Process the analog_value or send it over UART/Display it
+		  HAL_Delay(100); // Wait for 1 second before next reading
+		  char counterMessage[9];
+
+		  snprintf(counterMessage, 8, "%s\r\n", " AIN3: ");
+		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+		  HAL_Delay(100);
+
+		  snprintf(counterMessage, 4, "%d\r\n", Pot);
+   		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+     	  HAL_Delay(100);
+   		  execute_flag = '0';
+}
+
+
+void Read_LDR(){
+	 // Read analog data from A0 (channel 0) of the PCF8591
+		  uint8_t LDR = PCF8591_ReadAnalog(0);
+		  if(LDR < 128 ){   //exibir no display letra L -
+ 		 	    	  for (int i = 0; i < 8; i++){
+  		 	    		  max7219_PrintDigit(DIGIT_1 + i,data[4][i], true );HAL_Delay( 1000 );max7219_Clean();
+  		 	    	  }
+
+	  		 	      } else { //exibir no display letra L +
+	  		 	    	  for (int i = 0; i < 8; i++){
+	 	    	  	    		  max7219_PrintDigit(DIGIT_1 + i,data[5][i], true );HAL_Delay( 1000 );max7219_Clean();
+  		 	    	  	    	  }
+		  		 	   }
+
+		  HAL_Delay(100); // Wait before next reading
+		  char counterMessage[9];
+
+		  snprintf(counterMessage, 8, "%s\r\n", " AIN0: ");
+		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+		  HAL_Delay(100);
+
+		  snprintf(counterMessage, 4, "%d\r\n", LDR);
+		  HAL_UART_Transmit_IT(&huart3, (uint8_t *)counterMessage, strlen(counterMessage));
+		  HAL_Delay(100);
+		  execute_flag = '0';
+
+
+}
+
+void Write_DAC(){
+
+	{
+		    // Configura o valor do DAC no PCF8591
+	        uint8_t data[2] = {0x40, dac_value};  // 0x40 seleciona o DAC, seguido do valor do DAC
+	        if (HAL_I2C_Master_Transmit(&hi2c1, PCF8591_ADDRESS, data, 2, HAL_MAX_DELAY) != HAL_OK) {
+	            Error_Handler();
+	        }
+
+	        // Exibe o valor escrito no DAC no terminal via UART
+	        snprintf(uart_buffer, sizeof(uart_buffer), "DAC Value: %d\r\n", dac_value);
+	        HAL_UART_Transmit(&huart3, (uint8_t *)uart_buffer, strlen(uart_buffer), HAL_MAX_DELAY);
+
+	        // Aumenta o valor do DAC com limite de 0 a 255
+	        dac_value = (dac_value + 10) % 256;
+
+	        HAL_Delay(1000);
+	    }
+	}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -251,6 +338,54 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x10707DBC;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -495,6 +630,38 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+uint8_t PCF8591_ReadAnalog(uint8_t channel)
+{
+	uint8_t config_byte = 0x40 | (channel & 0x03); // Select the channel (A0, A1, A2, A3)
+	uint8_t analog_data[2];
+
+	// Send configuration byte to select the ADC channel
+	HAL_I2C_Master_Transmit(&hi2c1, PCF8591_ADDRESS, &config_byte, 1, 1000);
+
+	// Read two bytes: first byte is a dummy, second byte is the actual analog value
+	HAL_I2C_Master_Receive(&hi2c1, PCF8591_ADDRESS, analog_data, 2, 1000);
+
+	// Return the second byte which contains the valid ADC reading
+	return analog_data[1];
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+  if (strncmp(rx_buffer, "Read_AIN0", 9) == 0) {
+	  execute_flag = '1';
+  }
+  if (strncmp(rx_buffer, "Read_AIN1", 9) == 0) {
+	  execute_flag = '2';
+  }
+  if (strncmp(rx_buffer, "Read_AIN3", 9) == 0) {
+	  execute_flag = '3';
+  }
+  if (strncmp(rx_buffer, "Set_DAC_255", 11) == 0) {
+	  execute_flag = '4';
+  }
+
+}
 /* USER CODE END 4 */
 
 /**
