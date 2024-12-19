@@ -61,8 +61,8 @@ all: main-build
 main-build: Projeto9_I2C.elf secondary-outputs
 
 # Tool invocations
-Projeto9_I2C.elf Projeto9_I2C.map: $(OBJS) $(USER_OBJS) D:\JONAS\FACULDADE\MESTRADO\PROJETOS\ PLACA\ EMBARCADOS\Projeto9_I2C\STM32CubeIDE\STM32H753ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Projeto9_I2C.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"D:\JONAS\FACULDADE\MESTRADO\PROJETOS PLACA EMBARCADOS\Projeto9_I2C\STM32CubeIDE\STM32H753ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Projeto9_I2C.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Projeto9_I2C.elf Projeto9_I2C.map: $(OBJS) $(USER_OBJS) C:\Users\Bemielison\git\GrupoPPGEC_SistemasEmbarcados\Projeto9_I2C-main\Projeto9_I2C-main\STM32CubeIDE\STM32H753ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Projeto9_I2C.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\Bemielison\git\GrupoPPGEC_SistemasEmbarcados\Projeto9_I2C-main\Projeto9_I2C-main\STM32CubeIDE\STM32H753ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Projeto9_I2C.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
