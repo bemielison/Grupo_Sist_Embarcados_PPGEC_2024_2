@@ -114,6 +114,7 @@ uint8_t LDR = 0;
 uint8_t POT = 0;
 uint8_t TEMP = 0;
 uint8_t dac_value = 0;
+int currentExecution = 0;
 /* USER CODE END 0 */
 
 /**
@@ -177,31 +178,51 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	if (currentExecution == 0)
+	{
+		//escreve no sinal PWM o valor lido do potenciometro
+		// um led deve ser conectado ao pino do timer 1 - pino D6/PE9
+		// o brilho do led vai mudar em funcao do valor lido do potenciometro
+		Read_Pot();	   HAL_Delay(10);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, POT);
+		HAL_Delay(5);
+	}
 
-  //escreve no sinal PWM o valor lido do potenciometro
-  // um led deve ser conectado ao pino do timer 1 - pino D6/PE9
-  // o brilho do led vai mudar em funcao do valor lido do potenciometro
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, POT);
-  	HAL_Delay(5);
+	if (currentExecution == 1)
+	{
+		Read_LDR();	   HAL_Delay(10);
+		dac_value = (LDR);
 
-  //leitura do LDR
-  	Read_LDR();	   HAL_Delay(10);
-    Read_Pot();	   HAL_Delay(10);
-    Read_Temp();   HAL_Delay(10);
+		//Determinando a amplitude do DAC em funcao do valor do LDR normalizado.
+		// DAC sera o PA5/D13
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_8B_R, dac_value);
+		HAL_Delay(1);
 
-    dac_value = (LDR);
+	}
+	if (currentExecution == 2)
+	{
+		Read_Pot();	   HAL_Delay(10);
+		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, POT);
+		HAL_Delay(5);
+		Read_LDR();	   HAL_Delay(10);
+		dac_value = (LDR);
 
-  	//Determinando a amplitude do DAC em funcao do valor do LDR normalizado.
-    // DAC sera o PA5/D13
-  	HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_8B_R, dac_value);
-  	HAL_Delay(1);
+		//Determinando a amplitude do DAC em funcao do valor do LDR normalizado.
+		// DAC sera o PA5/D13
+		HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_8B_R, dac_value);
+		HAL_Delay(1);
+
+	}
+	else {
+		// not implemented
+	}
 
 
-  }
+    }
   /* USER CODE END 3 */
 }
 
-
+/*
 void ExecuteProgram()
 {
 	if(execute_flag == '1'){
@@ -219,6 +240,8 @@ void ExecuteProgram()
 	}
 
 }
+*/
+
 
 void Read_LDR(){
 	 // Read analog data from A0 (channel 0) of the PCF8591
@@ -840,14 +863,25 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+//Rotina botão azul.
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-if (GPIO_Pin == GPIO_PIN_13) {
-HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+	if (GPIO_Pin == GPIO_PIN_13) {
 
-} else {
-__NOP();
-}
+
+		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+
+		currentExecution++;
+
+		if (currentExecution == 3)
+		{
+			currentExecution = 0;
+		}
+
+	} else {
+		__NOP();
+	}
 }
 
 
